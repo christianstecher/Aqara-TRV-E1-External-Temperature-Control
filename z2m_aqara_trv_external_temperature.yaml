@@ -26,13 +26,13 @@ blueprint:
               manufacturer: Xiaomi
               model: Aqara Smart Radiator Thermostat E1 (SRTS-A01)
     z2m_instance_name:
-      name: "Z2M Instance Name"
+      name: "Z2M Instance Name (optional)"
       description: "The Zigbee2Mqtt instance name (default: zigbee2mqtt)"
       selector:
         text:
       default: "zigbee2mqtt"
     z2m_topic_name:
-      name: "External temperature topic name"
+      name: "External temperature topic name (optional)"
       description: "The Z2M external temperature topic name for the Agara SRTS-A01 (default: sensor_temp)"
       selector:
         text:
