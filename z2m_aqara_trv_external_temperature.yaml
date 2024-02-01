@@ -23,8 +23,8 @@ blueprint:
           multiple: false
           filter:
             - integration: mqtt
-              manufacturer: Xiaomi
-              model: Aqara Smart Radiator Thermostat E1 (SRTS-A01)
+              manufacturer: Aqara
+              model: Smart radiator thermostat E1 (SRTS-A01)
     z2m_instance_name:
       name: "Z2M Instance Name (optional)"
       description: "The Zigbee2Mqtt instance name (default: zigbee2mqtt)"
@@ -33,10 +33,14 @@ blueprint:
       default: "zigbee2mqtt"
     z2m_topic_name:
       name: "External temperature topic name (optional)"
-      description: "The Z2M external temperature topic name for the Agara SRTS-A01 (default: sensor_temp)"
+      description: >
+        The Z2M external temperature topic name for the Agara SRTS-A01. 
+        Z2M version <= 1.35.1 need to use the value: sensor_temp.
+        Z2M version >= 1.35.2 need to use the value: external_temperature_input.
+        (default: external_temperature_input)"
       selector:
         text:
-      default: "sensor_temp"
+      default: "external_temperature_input"
 
 mode: single
 max_exceeded: silent
