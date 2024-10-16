@@ -8,7 +8,7 @@ blueprint:
   input:
     external_temp_sensor:
       name: External temperature sensor
-      description: This temperature sensor values will be synced to the TRV
+      description: This temperature sensor value will be synced to the TRV
       selector:
         entity:
           filter:
@@ -17,7 +17,7 @@ blueprint:
               - temperature
     aqara_trv_device:
       name: The Aqara TRV
-      description: The TRV that the temperature willl be set to
+      description: The TRV that the external temperature will be send to
       selector:
         device:
           multiple: false
