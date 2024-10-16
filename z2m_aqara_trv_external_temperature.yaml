@@ -25,22 +25,12 @@ blueprint:
             - integration: mqtt
               manufacturer: Aqara
               model: Smart radiator thermostat E1 (SRTS-A01)
-    z2m_instance_name:
-      name: "Z2M Instance Name (optional)"
-      description: "The Zigbee2Mqtt instance name (default: zigbee2mqtt)"
+    external_temperature_input_name:
+      name: "Name (or parts of it) to identifiy the number input sensor"
+      description: "The name of the the Home-Assistant number-sensor to take the external temperatur sensor value against (default: external)"
       selector:
         text:
-      default: "zigbee2mqtt"
-    z2m_topic_name:
-      name: "External temperature topic name (optional)"
-      description: >
-        The Z2M external temperature topic name for the Agara SRTS-A01. 
-        Z2M version <= 1.35.1 need to use the value: sensor_temp.
-        Z2M version >= 1.35.2 need to use the value: external_temperature_input.
-        (default: external_temperature_input)"
-      selector:
-        text:
-      default: "external_temperature_input"
+      default: "external"
 
 mode: single
 max_exceeded: silent
@@ -48,12 +38,12 @@ max_exceeded: silent
 variables:
   aqara_trv_device: !input aqara_trv_device
   external_temp_sensor: !input external_temp_sensor
-  z2m_instance_name: !input z2m_instance_name
-  z2m_topic_name: !input z2m_topic_name
+  external_temperature_input_name: !input external_temperature_input_name
 
 trigger:
-  - platform: state
+  - trigger: state
     entity_id: !input external_temp_sensor
+
 action:
   - variables:
       aqara_trv_device_name: "{{ device_attr(aqara_trv_device, 'name') }}"
@@ -61,7 +51,15 @@ action:
         {% set device_entities = device_entities(aqara_trv_device) %}
         {{ expand(states['select'])   
                   | selectattr('entity_id','in', device_entities)
-                  | selectattr('attributes.options', 'contains', 'external')
+                  | selectattr('attributes.options', 'contains', external_temperature_input_name)
+                  | map(attribute='entity_id') 
+                  | first
+        }}
+      aqara_trv_number_entity: >-
+        {% set device_entities = device_entities(aqara_trv_device) %}
+        {{ expand(states['number'])   
+                  | selectattr('entity_id','in', device_entities)
+                  | selectattr('entity_id', 'contains', 'external')
                   | map(attribute='entity_id') 
                   | first
         }}
@@ -69,7 +67,7 @@ action:
       - condition: template
         value_template: "{{ not is_state(aqara_trv_select_entity, 'external')}}"
     then:
-      - service: select.select_option
+      - action: select.select_option
         target:
           entity_id: "{{aqara_trv_select_entity}}"
         data:
@@ -79,8 +77,10 @@ action:
           minutes: 0
           seconds: 10
           milliseconds: 0
-  - service: mqtt.publish
+
+  - action: number.set_value
     data:
-      topic: "{{z2m_instance_name}}/{{aqara_trv_device_name}}/set/{{z2m_topic_name}}"
-      payload: >-
+      value: >-
         {{ (states(external_temp_sensor)|float(0)|round(1)) }}
+    target:
+      entity_id: "{{aqara_trv_number_entity}}"
