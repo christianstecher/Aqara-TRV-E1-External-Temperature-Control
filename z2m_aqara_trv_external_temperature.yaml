@@ -1,36 +1,38 @@
 blueprint:
-  name: Aqara TRV E1 external temperature
+  name: Aqara TRV E1 External Temperature Control
   description: >
-    Configures the Aqara TRV to receive it's temperature from an external sensor.
-    Every time the temperature sensor value cahnges it's is send to the TRV.
+    This automation allows the Aqara TRV E1 Smart Radiator Thermostat to use temperature readings from an external sensor rather than its internal sensor. Whenever the temperature sensor reports a new value, it is sent to the TRV for more accurate climate control.
   domain: automation
   source_url: "https://gist.github.com/pavax/8d6ed250765d89cb281d4a1762b8d2e8"
+
   input:
     external_temp_sensor:
-      name: External temperature sensor
-      description: This temperature sensor value will be synced to the TRV
+      name: External Temperature Sensor
+      description: Select the temperature sensor that will provide temperature readings to the Aqara TRV.
       selector:
         entity:
           filter:
             domain: sensor
             device_class:
               - temperature
+
     aqara_trv_device:
-      name: The Aqara TRV
-      description: The TRV that the external temperature will be send to
+      name: Aqara TRV Device
+      description: Select the Aqara Smart Radiator Thermostat E1 that will receive the external temperature data.
       selector:
         device:
           multiple: false
           filter:
             - integration: mqtt
               manufacturer: Aqara
-              model: Smart radiator thermostat E1 (SRTS-A01)
+              model: Smart Radiator Thermostat E1 (SRTS-A01)
             - integration: mqtt
               manufacturer: Aqara
               model: Aqara Smart Radiator Thermostat E1 (SRTS-A01)
+
     external_temperature_input_name:
-      name: "Name to identifiy the TRV's number sensor"
-      description: "Name (or parts of it) of the TRV's Home-Assistant input number sensor in order to set the external temperatur value (default: external)"
+      name: TRV's Input Sensor Name
+      description: Enter a keyword or name used to identify the TRV’s number sensor entity-id, which sets the external temperature value. Defaults to 'external'.
       selector:
         text:
       default: "external"
@@ -66,6 +68,7 @@ action:
                   | map(attribute='entity_id') 
                   | first
         }}
+
   - if:
       - condition: template
         value_template: "{{ not is_state(aqara_trv_select_entity, 'external')}}"
