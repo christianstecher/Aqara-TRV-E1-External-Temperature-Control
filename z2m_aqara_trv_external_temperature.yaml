@@ -26,8 +26,8 @@ blueprint:
               manufacturer: Aqara
               model: Smart radiator thermostat E1 (SRTS-A01)
     external_temperature_input_name:
-      name: "Name (or parts of it) to identifiy the number input sensor"
-      description: "The name of the the Home-Assistant number-sensor to take the external temperatur sensor value against (default: external)"
+      name: "Name (or parts) to identifiy the trv device's number sensor"
+      description: "Name (or parts) of the the Home-Assistant number sensor in order to set the external temperatur value (default: external)"
       selector:
         text:
       default: "external"
