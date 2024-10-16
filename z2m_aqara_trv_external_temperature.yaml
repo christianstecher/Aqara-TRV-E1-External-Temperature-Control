@@ -25,6 +25,9 @@ blueprint:
             - integration: mqtt
               manufacturer: Aqara
               model: Smart radiator thermostat E1 (SRTS-A01)
+            - integration: mqtt
+              manufacturer: Aqara
+              model: Aqara Smart Radiator Thermostat E1 (SRTS-A01)
     external_temperature_input_name:
       name: "Name (or parts) to identifiy the trv device's number sensor"
       description: "Name (or parts) of the the Home-Assistant number sensor in order to set the external temperatur value (default: external)"
