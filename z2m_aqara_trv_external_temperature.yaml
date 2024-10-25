@@ -56,7 +56,7 @@ action:
         {% set device_entities = device_entities(aqara_trv_device) %}
         {{ expand(states['select'])   
                   | selectattr('entity_id','in', device_entities)
-                  | selectattr('attributes.options', 'contains', external_temperature_input_name)
+                  | selectattr('attributes.options', 'contains', 'external')
                   | map(attribute='entity_id') 
                   | first
         }}
@@ -64,7 +64,7 @@ action:
         {% set device_entities = device_entities(aqara_trv_device) %}
         {{ expand(states['number'])   
                   | selectattr('entity_id','in', device_entities)
-                  | selectattr('entity_id', 'contains', 'external')
+                  | selectattr('entity_id', 'contains', external_temperature_input_name)
                   | map(attribute='entity_id') 
                   | first
         }}
