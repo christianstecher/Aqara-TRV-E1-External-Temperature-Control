@@ -44,6 +44,7 @@ variables:
   aqara_trv_device: !input aqara_trv_device
   external_temp_sensor: !input external_temp_sensor
   external_temperature_input_name: !input external_temperature_input_name
+  aqara_trv_sensor_mode_value_external: "external"
 
 trigger:
   - trigger: state
@@ -56,7 +57,7 @@ action:
         {% set device_entities = device_entities(aqara_trv_device) %}
         {{ expand(states['select'])   
                   | selectattr('entity_id','in', device_entities)
-                  | selectattr('attributes.options', 'contains', 'external')
+                  | selectattr('attributes.options', 'contains', aqara_trv_sensor_mode_value_external)
                   | map(attribute='entity_id') 
                   | first
         }}
@@ -71,7 +72,7 @@ action:
 
   - if:
       - condition: template
-        value_template: "{{ not is_state(aqara_trv_select_entity, 'external')}}"
+        value_template: "{{ not is_state(aqara_trv_select_entity, aqara_trv_sensor_mode_value_external)}}"
     then:
       - action: select.select_option
         target:
