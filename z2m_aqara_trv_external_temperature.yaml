@@ -28,7 +28,13 @@ blueprint:
               model: Smart radiator thermostat E1 (SRTS-A01)
             - integration: mqtt
               manufacturer: Aqara
-              model: Aqara Smart Radiator Thermostat E1 (SRTS-A01)
+              model: Smart radiator thermostat E1
+            - integration: mqtt
+              manufacturer: Aqara
+              model: Aqara Smart Radiator thermostat E1 (SRTS-A01)
+            - integration: mqtt
+              manufacturer: Aqara
+              model: Aqara smart radiator thermostat E1 (SRTS-A01)
 
     external_temperature_input_name:
       name: TRV's Input Sensor Name
