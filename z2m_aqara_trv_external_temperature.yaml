@@ -1,9 +1,12 @@
 blueprint:
-  name: Aqara TRV E1 External Temperature Control
+  name: Aqara TRV E1 External Temperature Control (deadband)
   description: >
-    This automation allows the Aqara TRV E1 Smart Radiator Thermostat to use temperature readings from an external sensor rather than its internal sensor. Whenever the temperature sensor reports a new value, it is sent to the TRV for more accurate climate control.
+    Feeds an external temperature sensor into an Aqara E1 TRV. Applies a deadband
+    so small sensor changes don't flood the TRV with Zigbee writes (which can fail
+    with "Request superseded"). A time-based max interval ensures the TRV still
+    gets periodic updates during slow drift.
   domain: automation
-  source_url: "https://gist.github.com/pavax/8d6ed250765d89cb281d4a1762b8d2e8"
+  source_url: "https://gist.github.com/JakeCowton/55ee468775d8318ce58c4c4842a568b8"
 
   input:
     external_temp_sensor:
@@ -38,10 +41,39 @@ blueprint:
 
     external_temperature_input_name:
       name: TRV's Input Sensor Name
-      description: Enter a keyword or name used to identify the TRV’s number sensor entity-id, which sets the external temperature value. Defaults to 'external'.
+      description: Keyword used to identify the TRV's number entity that sets the external temperature value. Defaults to 'external'.
       selector:
         text:
       default: "external"
+
+    deadband:
+      name: Deadband (°C)
+      description: >
+        Only write a new value to the TRV when the sensor reading differs from
+        the last written value by at least this much. Prevents rapid-fire Zigbee
+        writes causing "Request superseded" failures.
+      default: 0.2
+      selector:
+        number:
+          min: 0.0
+          max: 2.0
+          step: 0.1
+          unit_of_measurement: "°C"
+          mode: slider
+
+    max_interval_minutes:
+      name: Maximum interval between writes (minutes)
+      description: >
+        Even if the sensor hasn't moved by the deadband, force a write after this
+        many minutes so the TRV doesn't act on stale data during slow drift.
+      default: 10
+      selector:
+        number:
+          min: 1
+          max: 60
+          step: 1
+          unit_of_measurement: "min"
+          mode: slider
 
 mode: single
 max_exceeded: silent
@@ -50,6 +82,8 @@ variables:
   aqara_trv_device: !input aqara_trv_device
   external_temp_sensor: !input external_temp_sensor
   external_temperature_input_name: !input external_temperature_input_name
+  deadband: !input deadband
+  max_interval_minutes: !input max_interval_minutes
 
 trigger:
   - trigger: state
@@ -60,20 +94,21 @@ action:
       aqara_trv_device_name: "{{ device_attr(aqara_trv_device, 'name') }}"
       aqara_trv_select_entity: >-
         {% set device_entities = device_entities(aqara_trv_device) %}
-        {{ expand(states['select'])   
+        {{ expand(states['select'])
                   | selectattr('entity_id','in', device_entities)
                   | selectattr('attributes.options', 'contains', 'external')
-                  | map(attribute='entity_id') 
+                  | map(attribute='entity_id')
                   | first
         }}
       aqara_trv_number_entity: >-
         {% set device_entities = device_entities(aqara_trv_device) %}
-        {{ expand(states['number'])   
+        {{ expand(states['number'])
                   | selectattr('entity_id','in', device_entities)
                   | selectattr('entity_id', 'contains', external_temperature_input_name)
-                  | map(attribute='entity_id') 
+                  | map(attribute='entity_id')
                   | first
         }}
+      mode_was_wrong: "{{ not is_state(aqara_trv_select_entity, 'external') }}"
 
   - if:
       - condition: template
@@ -82,7 +117,7 @@ action:
     then:
       - action: select.select_option
         target:
-          entity_id: "{{aqara_trv_select_entity}}"
+          entity_id: "{{ aqara_trv_select_entity }}"
         data:
           option: internal
       - action: system_log.write
@@ -94,22 +129,35 @@ action:
 
   - if:
       - condition: template
-        value_template: "{{ not is_state(aqara_trv_select_entity, 'external')}}"
+        value_template: "{{ mode_was_wrong }}"
     then:
       - action: select.select_option
         target:
-          entity_id: "{{aqara_trv_select_entity}}"
+          entity_id: "{{ aqara_trv_select_entity }}"
         data:
           option: external
       - delay:
-          hours: 0
-          minutes: 0
           seconds: 10
-          milliseconds: 0
 
-  - action: number.set_value
-    data:
-      value: >-
-        {{ (states(external_temp_sensor)|float(0)|round(1)) }}
-    target:
-      entity_id: "{{aqara_trv_number_entity}}"
+  - variables:
+      new_value: "{{ states(external_temp_sensor) | float(0) | round(1) }}"
+      last_written: "{{ states(aqara_trv_number_entity) | float(-999) }}"
+      last_written_age_min: >-
+        {% set s = states[aqara_trv_number_entity] %}
+        {{ ((now() - s.last_changed).total_seconds() / 60) if s and s.last_changed else 99999 }}
+      delta: "{{ (new_value - last_written) | abs }}"
+      should_write: >-
+        {{ mode_was_wrong
+           or last_written <= -998
+           or delta >= (deadband | float(0.2))
+           or last_written_age_min >= (max_interval_minutes | float(10)) }}
+
+  - if:
+      - condition: template
+        value_template: "{{ should_write }}"
+    then:
+      - action: number.set_value
+        data:
+          value: "{{ new_value }}"
+        target:
+          entity_id: "{{ aqara_trv_number_entity }}"
